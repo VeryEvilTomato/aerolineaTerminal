@@ -442,7 +442,7 @@ int main()
                             cout<<"----"<<aerolinea[i].nombre<<"----"<<endl;
                             for(j=0; j<aerolinea[i].vuelos.size(); j++){
                                 cout<<setw(15)<<aerolinea[i].vuelos[j].destino.c_str();
-                                cout<<setw(10)<<1 + aerolinea[i].vuelos[j].hora->tm_hour<<":"<<1 + aerolinea[i].vuelos[j].hora->tm_hour;
+                                cout<<setw(10)<<aerolinea[i].vuelos[j].hora->tm_hour<<":"<<aerolinea[i].vuelos[j].hora->tm_hour;
                                 cout<<setw(6)<<strftime(buffer,80,"%H %M %p",aerolinea[i].vuelos[j].hora)<<endl;
                             }
                         }
