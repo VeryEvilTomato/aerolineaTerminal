@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "ctime": "cpp",
+        "vector": "cpp",
+        "string": "cpp"
+    },
+    "clang.executable": "C:\\msys64\\mingw64\\bin\\clang.exe",
+    "terminal.integrated.env.windows": {
+        "terminal.integrated.shell.windows": "C:\\cygwin64\\bin\\mintty.exe"
+    }
+}
