@@ -29,7 +29,8 @@ struct Avion{           //Registro para almacenar un avión
 };
 
 struct Vuelo{           //Registro para almacenar un vuelo
-    tm *hora;           //Hora en formatos hh:mm, hora = hh, min = mm           
+    int hora;
+    int min;           //Hora en formatos hh:mm, hora = hh, min = mm           
     bool tipo;          //0 si es salida, 1 si es entrada
     string destino;
     Avion avion;        //Avión que usará el vuelo
@@ -43,10 +44,8 @@ class Aerolinea{        //Clase para gestionar aerolíneas
     //Agregar un vuelo con su hora, tipo y destino
     void agregar(int pHora, int pMin, bool pTipo, string pDestino){
         Vuelo contenedor;
-        time_t now = time(NULL);
-        contenedor.hora = localtime(&now);
-        contenedor.hora->tm_hour = pHora;
-        contenedor.hora->tm_min = pMin;
+        contenedor.hora = pHora;
+        contenedor.min= pMin;
         contenedor.tipo = pTipo;
         contenedor.destino = pDestino;
         vuelos.push_back(contenedor);
@@ -61,7 +60,7 @@ class Aerolinea{        //Clase para gestionar aerolíneas
             return;
         }
         for(i=0; i<vuelos.size(); i++){
-            if(vuelos[i].hora->tm_hour == pHora && vuelos[i].hora->tm_min == pMin && vuelos[i].tipo == pTipo){
+            if(vuelos[i].hora == pHora && vuelos[i].min == pMin && vuelos[i].tipo == pTipo){
                 index = i;
             }
         }
@@ -73,9 +72,11 @@ class Aerolinea{        //Clase para gestionar aerolíneas
 int main()
 {
     //Declaraciones
-    int i, j, opc = 0; 
+    int i, j, k, opc = 0; 
     bool salir = false;
     fstream datos;
+	vector <Vuelo> vuelosEspera;
+	vector <Vuelo> vuelosProgreso[1];
     vector <Avion> aviones;
     Avion avContenedor;
 
@@ -120,349 +121,423 @@ int main()
 
     //
     //Menú principal
+
+	aerolinea[0].agregar(23,15,1,"RioDeJaneiro-Galeao");
+	aerolinea[1].agregar(23,30,1,"Recife");
+	aerolinea[3].agregar(10,30,0,"Cascavel");
+
+	avContenedor.nombre = "Boeing747";
+	avContenedor.tiempoCarga = 2;
+	avContenedor.tiempoDescarga = 1;
+	avContenedor.tiempoPista = 2;
+	aviones.push_back(avContenedor);
+	avContenedor.nombre = "AirbusA320";
+	avContenedor.tiempoCarga = 2;
+	avContenedor.tiempoDescarga = 1;
+	avContenedor.tiempoPista = 2;
+	aviones.push_back(avContenedor);
+	avContenedor.nombre = "TupolevTu-204";
+	avContenedor.tiempoCarga = 2;
+	avContenedor.tiempoDescarga = 1;
+	avContenedor.tiempoPista = 2;
+	aviones.push_back(avContenedor);
     
-        while(salir == false){
-            opc = menuGeneral();
-            time_t hora;
-            char buffer[80];
-            switch(opc){
-                case 1: //Gestión de vuelos por aerolínea
-                    while(salir == false){
-                        int h,m; string d; bool t;
-                        opc = submenuVuelos();
-                        limpiar();
-                        switch(opc){
-                            case 1: //Avianca Brasil
-                                do{
-                                    limpiar();
-                                    cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
-                                    cout<<"hh (0-23): "; cin>>h;
-                                    cout<<"mm (0-59): "; cin>>m;
-                                    cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
-                                    if(!checkHora(h,m,t)){
-                                        cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
-                                        getchar();
-                                    }
-                                    if(cin.fail()){
-                                        cin.clear();
-                                        cin.ignore();
-                                        d = 2; h = 100; m = 100;
-                                    } 
-                                }
-                                while(!checkHora(h,m,t));
-                                //
-                                limpiar();
-                                do{
-                                    limpiar();
-                                    showDestinos(aviancaBrasil);
-                                    cout<<"Destino: ";
-                                    cin>>d;
-                                    if(!checkDestino(aviancaBrasil,d)){
-                                        cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
-                                        getchar();
-                                    } 
-                                }while(!checkDestino(aviancaBrasil,d));
-                                //
-                                aerolinea[0].agregar(h,m,t,d);
-                                break;
-                            case 2: //Azul Lineas Aereas
-                                do{
-                                    limpiar();
-                                    cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
-                                    cout<<"hh (0-23): "; cin>>h;
-                                    cout<<"mm (0-59): "; cin>>m;
-                                    cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
-                                    if(!checkHora(h,m,t)){
-                                        cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
-                                        getchar();
-                                    }
-                                    if(cin.fail()){
-                                        cin.clear();
-                                        cin.ignore();
-                                        d = 2; h = 100; m = 100;
-                                    } 
-                                }
-                                while(!checkHora(h,m,t));
-                                //
-                                limpiar();
-                                do{
-                                    limpiar();
-                                    showDestinos(azulLineasAereas);
-                                    cout<<"Destino: ";
-                                    cin>>d;
-                                    if(!checkDestino(azulLineasAereas,d)){
-                                        cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
-                                        getchar();
-                                    } 
-                                }while(!checkDestino(azulLineasAereas,d));
-                                //
-                                aerolinea[1].agregar(h,m,t,d);
-                                break;
-                            case 3: //GOL Lineas Aereas
-                                do{
-                                    limpiar();
-                                    cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
-                                    cout<<"hh (0-23): "; cin>>h;
-                                    cout<<"mm (0-59): "; cin>>m;
-                                    cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
-                                    if(!checkHora(h,m,t)){
-                                        cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
-                                        getchar();
-                                    }
-                                    if(cin.fail()){
-                                        cin.clear();
-                                        cin.ignore();
-                                        d = 2; h = 100; m = 100;
-                                    } 
-                                }
-                                while(!checkHora(h,m,t));
-                                //
-                                limpiar();
-                                do{
-                                    limpiar();
-                                    showDestinos(golLineasAereas);
-                                    cout<<"Destino: ";
-                                    cin>>d;
-                                    if(!checkDestino(golLineasAereas,d)){
-                                        cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
-                                        getchar();
-                                    } 
-                                }while(!checkDestino(golLineasAereas,d));
-                                //
-                                aerolinea[2].agregar(h,m,t,d);
-                                break;
-                            case 4: //Passared Lineas Aereas
-                                do{
-                                    limpiar();
-                                    cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
-                                    cout<<"hh (0-23): "; cin>>h;
-                                    cout<<"mm (0-59): "; cin>>m;
-                                    cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
-                                    if(!checkHora(h,m,t)){
-                                        cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
-                                        getchar();
-                                    }
-                                    if(cin.fail()){
-                                        cin.clear();
-                                        cin.ignore();
-                                        d = 2; h = 100; m = 100;
-                                    } 
-                                }
-                                while(!checkHora(h,m,t));
-                                //
-                                limpiar();
-                                do{
-                                    limpiar();
-                                    showDestinos(passaredLineasAereas);
-                                    cout<<"Destino: ";
-                                    cin>>d;
-                                    if(!checkDestino(passaredLineasAereas,d)){
-                                        cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
-                                        getchar();
-                                    } 
-                                }while(!checkDestino(passaredLineasAereas,d));
-                                //
-                                aerolinea[3].agregar(h,m,t,d);
-                                break; 
-                            case 5: //LATAM Brasil
-                                do{
-                                    limpiar();
-                                    cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
-                                    cout<<"hh (0-23): "; cin>>h;
-                                    cout<<"mm (0-59): "; cin>>m;
-                                    cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
-                                    if(!checkHora(h,m,t)){
-                                        cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
-                                        getchar();
-                                    }
-                                    if(cin.fail()){
-                                        cin.clear();
-                                        cin.ignore();
-                                        d = 2; h = 100; m = 100;
-                                    } 
-                                }
-                                while(!checkHora(h,m,t));
-                                //
-                                limpiar();
-                                do{
-                                    limpiar();
-                                    showDestinos(latamBrasil);
-                                    cout<<"Destino: ";
-                                    cin>>d;
-                                    if(!checkDestino(latamBrasil,d)){
-                                        cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
-                                        getchar();
-                                    } 
-                                }while(!checkDestino(latamBrasil,d));
-                                //
-                                aerolinea[4].agregar(h,m,t,d);
-                                break;
-                            case 6: //Salir
-                                salir = true;
-                                break; 
-                            default:
-                                limpiar();
-                                cout<<"---Debe introducir una opcion valida (Numero del 1 al 6 | Enter para continuar)"<<endl;
-                                getchar();
-                                break; 
-                        }
-                    }
-                    salir = false;
-                    break;
-                case 2: //Gestión de aviones en el aeropuerto
-                    while(salir == false){
-                        opc = submenuAviones();
-                        bool check = false;
-                        int index;
-                        string avion;
-                        limpiar();
-                        switch(opc){
-                            case 1: //Introducir un avión
-                                do{
-                                    if(cin.fail())  cout<<"---Error, por favor introduzca el formato correcto"<<endl;
-                                    limpiar();
-                                    cin.clear();
-                                    cin.ignore();
-                                    cout<<"Introduzca el nombre del avion: ";
-                                    cin>>avContenedor.nombre;
-                                    cout<<"Tiempo de carga (En minutos): ";
-                                    cin>>avContenedor.tiempoCarga;
-                                    cout<<"Tiempo de descarga (En minutos): ";
-                                    cin>>avContenedor.tiempoDescarga;
-                                    cout<<"Tiempo de pista (En minutos): ";
-                                    cin>>avContenedor.tiempoPista;
-                                }
-                                while(cin.fail());
-                                aviones.push_back(avContenedor);
-                                break;
-                            case 2: //Eliminar un avión
-                                if(!aviones.empty()){
-                                    limpiar();
-                                    cout<<"Introduzca el nombre del avion (Considere mayusculas): ";
-                                    cin>>avion;
-                                    for(i=0; i<aviones.size(); i++){
-                                        if(aviones[i].nombre == avion){
-                                            check = true;
-                                            index = i;
-                                        }
-                                    }
-                                    if(check){
-                                        aviones.erase(aviones.begin()+index);
-                                        cout<<"Avion eliminado"<<endl;
-                                    }
-                                    else{
-                                        limpiar();
-                                        cout<<"No se consiguio el avion (Presione enter para continuar)"<<endl;
-                                    }
-                                }
-                                else{
-                                    cout<<"No hay aviones activos en el sistema (Enter para continuar)"<<endl;
-                                }
-                                getchar();
-                                break;
-                            case 3: //Modificar un avión
-                                if(!aviones.empty()){
-                                    limpiar();
-                                    cout<<"Introduzca el nombre del avion a modificar (Considere mayusculas): ";
-                                    cin>>avion;
-                                    for(i=0; i<aviones.size(); i++){
-                                        if(aviones[i].nombre == avion){
-                                            check = true;
-                                            index = i;
-                                        }
-                                    }
-                                    if(check){
-                                        do{
-                                            if(cin.fail())  cout<<"---Error, por favor introduzca el formato correcto"<<endl;
-                                            limpiar();
-                                            cin.clear();
-                                            cin.ignore();
-                                            cout<<"Introduzca el nombre del avion: ";
-                                            cin>>avContenedor.nombre;
-                                            cout<<"Tiempo de carga (En minutos): ";
-                                            cin>>avContenedor.tiempoCarga;
-                                            cout<<"Tiempo de descarga (En minutos): ";
-                                            cin>>avContenedor.tiempoDescarga;
-                                            cout<<"Tiempo de pista (En minutos): ";
-                                            cin>>avContenedor.tiempoPista;
-                                        }
-                                        while(cin.fail());
-                                        aviones[index] = avContenedor;
-                                        cout<<"Datos modificados para el avion "<<avContenedor.nombre<<" (Presione enter para continuar)";
-                                        cout<<endl;
-                                        cout<<endl;
-                                    }
-                                    else{
-                                        limpiar();
-                                        cout<<"No se consiguio el avion (Presione enter para continuar)"<<endl;
-                                    }
-                                }
-                                else{
-                                    cout<<"No hay aviones activos en el sistema (Enter para continuar)"<<endl;
-                                }
-                                getchar();
-                                break;
-                            case 4: //Lista de aviones
-                                if(!aviones.empty()){
-                                    cout<<setfill('-');
-                                    cout<<setw(15)<<"Nombre:"<<setw(10)<<"TCarga"<<setw(10)<<"TDescarga"<<setw(10)<<"TPista"<<endl;
-                                    for(i=0; i<aviones.size(); i++){
-                                        cout<<setfill(' ');
-                                        cout<<setw(15)<<aviones[i].nombre.c_str();
-                                        cout<<setw(10)<<aviones[i].tiempoCarga;
-                                        cout<<setw(10)<<aviones[i].tiempoDescarga;
-                                        cout<<setw(10)<<aviones[i].tiempoPista<<endl;
-                                    }
-                                    cout<<"---Enter para continuar"<<endl;
-                                }
-                                else{
-                                    cout<<"No hay aviones activos en el sistema (Enter para continuar)"<<endl;
-                                }
-                                getchar();
-                                break;
-                            case 5:
-                                salir = true;
-                                break;                             
-                            default:
-                                limpiar();
-                                cout<<"------Debe introducir una opcion valida (Numero del 1 al 5 | Enter para continuar)------"<<endl;
-                                getchar();
-                                break;
-                        }
-                    }
-                    salir = false;
-                    break;
-                    break;
-                case 3: //Visualización del aeropuerto
-                    //Vuelos programados
-                    while(salir == false){
-                        limpiar();
-                        cout<<setw(40)<<"*** VUELOS PROGRAMADOS ***"<<endl;
-                        for(i=0; i<5; i++){
-                            cout<<"----"<<aerolinea[i].nombre<<"----"<<endl;
-                            for(j=0; j<aerolinea[i].vuelos.size(); j++){
-                                cout<<setw(15)<<aerolinea[i].vuelos[j].destino.c_str();
-                                cout<<setw(10)<<aerolinea[i].vuelos[j].hora->tm_hour<<":"<<aerolinea[i].vuelos[j].hora->tm_hour;
-                                cout<<setw(6)<<strftime(buffer,80,"%H %M %p",aerolinea[i].vuelos[j].hora)<<endl;
-                            }
-                        }
-                        cout<<setw(40)<<"*** VUELOS EN ESPERA ***"<<endl;
-                        getchar();
-                        salir = true;
-                    }
-                    salir = false;
-                    break;
-                case 4: //Interrumpir operacion
-                    limpiar();
-                    cout<<"(Presione enter para continuar)"<<endl;
-                    salir = true;
-                    break;
-                default:
-                    cout<<"---Debe introducir una opcion valida (Numero del 1 al 5 | Enter para continuar)"<<endl;
-                    getchar();
-                    break;
-            }
-        }
+	while(salir == false){
+		opc = menuGeneral();
+		time_t hora;
+		char buffer[80];
+		int input;
+		bool update = false;
+		switch(opc){
+			case 1: //Gestión de vuelos por aerolínea
+				while(salir == false){
+					int h,m; string d; bool t;
+					opc = submenuVuelos();
+					limpiar();
+					switch(opc){
+						case 1: //Avianca Brasil
+							do{
+								limpiar();
+								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
+								cout<<"hh (0-23): "; cin>>h;
+								cout<<"mm (0-59): "; cin>>m;
+								cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
+								if(!checkHora(h,m,t)){
+									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
+									getchar();
+								}
+								if(cin.fail()){
+									cin.clear();
+									cin.ignore();
+									d = 2; h = 100; m = 100;
+								} 
+							}
+							while(!checkHora(h,m,t));
+							//
+							limpiar();
+							do{
+								limpiar();
+								showDestinos(aviancaBrasil);
+								cout<<"Destino: ";
+								cin>>d;
+								if(!checkDestino(aviancaBrasil,d)){
+									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
+									getchar();
+								} 
+							}while(!checkDestino(aviancaBrasil,d));
+							//
+							aerolinea[0].agregar(h,m,t,d);
+							break;
+						case 2: //Azul Lineas Aereas
+							do{
+								limpiar();
+								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
+								cout<<"hh (0-23): "; cin>>h;
+								cout<<"mm (0-59): "; cin>>m;
+								cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
+								if(!checkHora(h,m,t)){
+									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
+									getchar();
+								}
+								if(cin.fail()){
+									cin.clear();
+									cin.ignore();
+									d = 2; h = 100; m = 100;
+								} 
+							}
+							while(!checkHora(h,m,t));
+							//
+							limpiar();
+							do{
+								limpiar();
+								showDestinos(azulLineasAereas);
+								cout<<"Destino: ";
+								cin>>d;
+								if(!checkDestino(azulLineasAereas,d)){
+									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
+									getchar();
+								} 
+							}while(!checkDestino(azulLineasAereas,d));
+							//
+							aerolinea[1].agregar(h,m,t,d);
+							break;
+						case 3: //GOL Lineas Aereas
+							do{
+								limpiar();
+								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
+								cout<<"hh (0-23): "; cin>>h;
+								cout<<"mm (0-59): "; cin>>m;
+								cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
+								if(!checkHora(h,m,t)){
+									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
+									getchar();
+								}
+								if(cin.fail()){
+									cin.clear();
+									cin.ignore();
+									d = 2; h = 100; m = 100;
+								} 
+							}
+							while(!checkHora(h,m,t));
+							//
+							limpiar();
+							do{
+								limpiar();
+								showDestinos(golLineasAereas);
+								cout<<"Destino: ";
+								cin>>d;
+								if(!checkDestino(golLineasAereas,d)){
+									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
+									getchar();
+								} 
+							}while(!checkDestino(golLineasAereas,d));
+							//
+							aerolinea[2].agregar(h,m,t,d);
+							break;
+						case 4: //Passared Lineas Aereas
+							do{
+								limpiar();
+								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
+								cout<<"hh (0-23): "; cin>>h;
+								cout<<"mm (0-59): "; cin>>m;
+								cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
+								if(!checkHora(h,m,t)){
+									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
+									getchar();
+								}
+								if(cin.fail()){
+									cin.clear();
+									cin.ignore();
+									d = 2; h = 100; m = 100;
+								} 
+							}
+							while(!checkHora(h,m,t));
+							//
+							limpiar();
+							do{
+								limpiar();
+								showDestinos(passaredLineasAereas);
+								cout<<"Destino: ";
+								cin>>d;
+								if(!checkDestino(passaredLineasAereas,d)){
+									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
+									getchar();
+								} 
+							}while(!checkDestino(passaredLineasAereas,d));
+							//
+							aerolinea[3].agregar(h,m,t,d);
+							break; 
+						case 5: //LATAM Brasil
+							do{
+								limpiar();
+								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
+								cout<<"hh (0-23): "; cin>>h;
+								cout<<"mm (0-59): "; cin>>m;
+								cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
+								if(!checkHora(h,m,t)){
+									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
+									getchar();
+								}
+								if(cin.fail()){
+									cin.clear();
+									cin.ignore();
+									d = 2; h = 100; m = 100;
+								} 
+							}
+							while(!checkHora(h,m,t));
+							//
+							limpiar();
+							do{
+								limpiar();
+								showDestinos(latamBrasil);
+								cout<<"Destino: ";
+								cin>>d;
+								if(!checkDestino(latamBrasil,d)){
+									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
+									getchar();
+								} 
+							}while(!checkDestino(latamBrasil,d));
+							//
+							aerolinea[4].agregar(h,m,t,d);
+							break;
+						case 6: //Salir
+							salir = true;
+							break; 
+						default:
+							limpiar();
+							cout<<"---Debe introducir una opcion valida (Numero del 1 al 6 | Enter para continuar)"<<endl;
+							getchar();
+							break; 
+					}
+				}
+				salir = false;
+				break;
+			case 2: //Gestión de aviones en el aeropuerto
+				while(salir == false){
+					opc = submenuAviones();
+					bool check = false;
+					int index;
+					string avion;
+					limpiar();
+					switch(opc){
+						case 1: //Introducir un avión
+							do{
+								if(cin.fail())  cout<<"---Error, por favor introduzca el formato correcto"<<endl;
+								limpiar();
+								cin.clear();
+								cin.ignore();
+								cout<<"Introduzca el nombre del avion: ";
+								cin>>avContenedor.nombre;
+								cout<<"Tiempo de carga (En minutos): ";
+								cin>>avContenedor.tiempoCarga;
+								cout<<"Tiempo de descarga (En minutos): ";
+								cin>>avContenedor.tiempoDescarga;
+								cout<<"Tiempo de pista (En minutos): ";
+								cin>>avContenedor.tiempoPista;
+							}
+							while(cin.fail());
+							aviones.push_back(avContenedor);
+							break;
+						case 2: //Eliminar un avión
+							if(!aviones.empty()){
+								limpiar();
+								cout<<"Introduzca el nombre del avion (Considere mayusculas): ";
+								cin>>avion;
+								for(i=0; i<aviones.size(); i++){
+									if(aviones[i].nombre == avion){
+										check = true;
+										index = i;
+									}
+								}
+								if(check){
+									aviones.erase(aviones.begin()+index);
+									cout<<"Avion eliminado"<<endl;
+								}
+								else{
+									limpiar();
+									cout<<"No se consiguio el avion (Presione enter para continuar)"<<endl;
+								}
+							}
+							else{
+								cout<<"No hay aviones activos en el sistema (Enter para continuar)"<<endl;
+							}
+							getchar();
+							break;
+						case 3: //Modificar un avión
+							if(!aviones.empty()){
+								limpiar();
+								cout<<"Introduzca el nombre del avion a modificar (Considere mayusculas): ";
+								cin>>avion;
+								for(i=0; i<aviones.size(); i++){
+									if(aviones[i].nombre == avion){
+										check = true;
+										index = i;
+									}
+								}
+								if(check){
+									do{
+										if(cin.fail())  cout<<"---Error, por favor introduzca el formato correcto"<<endl;
+										limpiar();
+										cin.clear();
+										cin.ignore();
+										cout<<"Introduzca el nombre del avion: ";
+										cin>>avContenedor.nombre;
+										cout<<"Tiempo de carga (En minutos): ";
+										cin>>avContenedor.tiempoCarga;
+										cout<<"Tiempo de descarga (En minutos): ";
+										cin>>avContenedor.tiempoDescarga;
+										cout<<"Tiempo de pista (En minutos): ";
+										cin>>avContenedor.tiempoPista;
+									}
+									while(cin.fail());
+									aviones[index] = avContenedor;
+									cout<<"Datos modificados para el avion "<<avContenedor.nombre<<" (Presione enter para continuar)";
+									cout<<endl;
+									cout<<endl;
+								}
+								else{
+									limpiar();
+									cout<<"No se consiguio el avion (Presione enter para continuar)"<<endl;
+								}
+							}
+							else{
+								cout<<"No hay aviones activos en el sistema (Enter para continuar)"<<endl;
+							}
+							getchar();
+							break;
+						case 4: //Lista de aviones
+							if(!aviones.empty()){
+								cout<<setfill('-');
+								cout<<setw(15)<<"Nombre:"<<setw(10)<<"TCarga"<<setw(10)<<"TDescarga"<<setw(10)<<"TPista"<<endl;
+								for(i=0; i<aviones.size(); i++){
+									cout<<setfill(' ');
+									cout<<setw(15)<<aviones[i].nombre.c_str();
+									cout<<setw(10)<<aviones[i].tiempoCarga;
+									cout<<setw(10)<<aviones[i].tiempoDescarga;
+									cout<<setw(10)<<aviones[i].tiempoPista<<endl;
+								}
+								cout<<"---Enter para continuar"<<endl;
+							}
+							else{
+								cout<<"No hay aviones activos en el sistema (Enter para continuar)"<<endl;
+							}
+							getchar();
+							break;
+						case 5:
+							salir = true;
+							break;                             
+						default:
+							limpiar();
+							cout<<"------Debe introducir una opcion valida (Numero del 1 al 5 | Enter para continuar)------"<<endl;
+							getchar();
+							break;
+					}
+				}
+				salir = false;
+				break;
+				break;
+			case 3: //Visualización del aeropuerto
+				//Vuelos programados
+				while(salir == false){
+					limpiar();
+					time_t now = time(0);
+					tm *contenedor = localtime(&now);
+					strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
+					cout<<setw(40)<<"HORA ACTUAL: "<<buffer<<endl<<endl;
+					cout<<setw(40)<<"*** VUELOS PROGRAMADOS ***"<<endl;
+					for(i=0; i<5; i++){
+						if(!aerolinea[i].vuelos.empty()){
+							j = 0;
+							while(j < aerolinea[i].vuelos.size()){
+								if(contenedor->tm_hour >= aerolinea[i].vuelos[j].hora && contenedor->tm_min >= aerolinea[i].vuelos[j].min){
+									aerolinea[i].vuelos[j].avion = aviones[(rand() % aviones.size())];
+									aerolinea[i].vuelos[j].avion.tiempoCarga += rand()%3;
+									aerolinea[i].vuelos[j].avion.tiempoDescarga += rand()%3;
+									aerolinea[i].vuelos[j].avion.tiempoPista += rand()%3;
+									vuelosEspera.push_back(aerolinea[i].vuelos[j]);
+									aerolinea[i].vuelos.erase(aerolinea[i].vuelos.begin()+j);
+									j--;
+								}
+								j++;
+							}
+							update = false;
+						}
+						if(!aerolinea[i].vuelos.empty()){
+							cout<<"----"<<aerolinea[i].nombre<<"----"<<endl;
+							cout<<setw(20)<<"_Destino"<<setw(10)<<"_Hora"<<setw(10)<<"_Tipo"<<endl;
+							for(j=0; j<aerolinea[i].vuelos.size(); j++){
+								contenedor->tm_hour = aerolinea[i].vuelos[j].hora;
+								contenedor->tm_min  = aerolinea[i].vuelos[j].min;
+								cout<<"|"<<setw(19)<<aerolinea[i].vuelos[j].destino.c_str();
+								strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
+								cout<<setw(10)<<buffer;
+								cout<<setw(10)<<aerolinea[i].vuelos[j].tipo<<endl;
+							
+							}
+							cout<<endl;
+						}
+					}
+					if(!vuelosEspera.empty()){
+						cout<<setw(40)<<"*** VUELOS EN ESPERA ***"<<endl;
+						cout<<setw(20)<<"_Destino"<<setw(20)<<"Nombr. Avion"<<endl;
+						for(i=0; i<vuelosEspera.size(); i++){
+							cout<<"|"<<setw(19)<<vuelosEspera[i].destino.c_str();
+							cout<<setw(20)<<vuelosEspera[i].avion.nombre.c_str();
+							cout<<endl;
+						}
+						
+					};
+					cout<<endl;
+					cout<<"(1) para salir / (2) para actualizar / (3) para atender 1 vuelo en espera"<<endl;
+					cout<<"Introduzca el numero exacto: "; cin>>input;
+					switch(input){
+						case 1:
+							salir = true;
+							break;
+						case 2:
+							update = true;
+							break;
+						case 3:
+							break;
+						default:
+							cout<<"---Debe introducir una opcion valida (Numero del 1 al 3 | Enter para continuar)"<<endl;
+							getchar();
+							break;
+					}
+				}
+				salir = false;
+				break;
+			case 4: //Interrumpir operacion
+				limpiar();
+				cout<<"(Presione enter para continuar)"<<endl;
+				salir = true;
+				break;
+			default:
+				cout<<"---Debe introducir una opcion valida (Numero del 1 al 5 | Enter para continuar)"<<endl;
+				getchar();
+				break;
+		}
+	}
     
 
     //Cerrando temporizador
@@ -544,7 +619,7 @@ int submenuAviones(){   //Submenú para la gestión de aviones
 //Utilidades:
 void limpiar(){
     system("cls");
-    system("clear");
+    //system("clear");
 }
 
 bool checkHora(int hour, int min, bool tipo){  //Chequear si la hora tiene valores correctos
