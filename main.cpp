@@ -20,6 +20,7 @@ void limpiar();
 bool checkHora(int hour, int min, bool tipo);
 bool checkDestino(vector<string> destinos, string destino);
 void showDestinos(vector<string> destinos);
+void showHoraFecha(time_t time);
 
 struct Avion{           //Registro para almacenar un avión
     string nombre;
@@ -28,12 +29,17 @@ struct Avion{           //Registro para almacenar un avión
     int tiempoPista;    //Tiempo que pasa en la pista
 };
 
+struct Tiempo{
+	int duracion, i, j;
+	int hora,min;
+};
+
 struct Vuelo{           //Registro para almacenar un vuelo
-    int hora;
-    int min;           //Hora en formatos hh:mm, hora = hh, min = mm           
+    int hora, min;		//Hora en formatos hh:mm/hora = hh, min = mm
     bool tipo;          //0 si es salida, 1 si es entrada
     string destino;
     Avion avion;        //Avión que usará el vuelo
+	int estado;
 };
 
 class Aerolinea{        //Clase para gestionar aerolíneas
@@ -45,27 +51,32 @@ class Aerolinea{        //Clase para gestionar aerolíneas
     void agregar(int pHora, int pMin, bool pTipo, string pDestino){
         Vuelo contenedor;
         contenedor.hora = pHora;
-        contenedor.min= pMin;
+        contenedor.min = pMin;
         contenedor.tipo = pTipo;
         contenedor.destino = pDestino;
+		contenedor.estado = 0;
         vuelos.push_back(contenedor);
+
+		cout<<"Vuelo agregado (Enter para continuar)"<<endl;
+		getchar();
     }
 
     //Eliminar un vuelo segun su hora y destino
-    void eliminar(int pHora, int pMin, bool pTipo){
+    void eliminar(int pHora, int pMin, bool pTipo, string pDestino){
         int i = 0, index;
-        if(!vuelos.empty()){
+        if(vuelos.empty()){
             cout<<"--- No hay vuelos asignados para esta aerolinea (Enter para continuar)"<<endl;
             getchar();
             return;
         }
         for(i=0; i<vuelos.size(); i++){
-            if(vuelos[i].hora == pHora && vuelos[i].min == pMin && vuelos[i].tipo == pTipo){
+            if(vuelos[i].hora == pHora && vuelos[i].min == pMin && vuelos[i].tipo == pTipo && vuelos[i].destino == pDestino){
                 index = i;
             }
         }
         vuelos.erase(vuelos.begin()+index);
-        cout<<index;
+        cout<<"Vuelo eliminado (Enter para continuar)"<<endl;
+        getchar();
     }
 };
 
@@ -75,8 +86,8 @@ int main()
     int i, j, k, opc = 0; 
     bool salir = false;
     fstream datos;
-	vector <Vuelo> vuelosEspera;
-	vector <Vuelo> vuelosProgreso[1];
+	vector <Tiempo> vuelosDescarga;
+	vector <Tiempo> vuelosCarga;
     vector <Avion> aviones;
     Avion avContenedor;
 
@@ -122,10 +133,6 @@ int main()
     //
     //Menú principal
 
-	aerolinea[0].agregar(23,15,1,"RioDeJaneiro-Galeao");
-	aerolinea[1].agregar(23,30,1,"Recife");
-	aerolinea[3].agregar(10,30,0,"Cascavel");
-
 	avContenedor.nombre = "Boeing747";
 	avContenedor.tiempoCarga = 2;
 	avContenedor.tiempoDescarga = 1;
@@ -142,23 +149,26 @@ int main()
 	avContenedor.tiempoPista = 2;
 	aviones.push_back(avContenedor);
     
+	
 	while(salir == false){
+		limpiar();
+		time_t menu = time(0);
 		opc = menuGeneral();
-		time_t hora;
 		char buffer[80];
 		int input;
-		bool update = false;
 		switch(opc){
 			case 1: //Gestión de vuelos por aerolínea
-				while(salir == false){
+				while(salir == false){			
 					int h,m; string d; bool t;
+					bool eraseAdd;	
+					limpiar();				
 					opc = submenuVuelos();
-					limpiar();
 					switch(opc){
 						case 1: //Avianca Brasil
+							// Chequeo del formato de fecha y hora 
 							do{
 								limpiar();
-								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
+								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm/24 Horas):"<<endl;
 								cout<<"hh (0-23): "; cin>>h;
 								cout<<"mm (0-59): "; cin>>m;
 								cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
@@ -173,7 +183,7 @@ int main()
 								} 
 							}
 							while(!checkHora(h,m,t));
-							//
+							// Chequeo del destino
 							limpiar();
 							do{
 								limpiar();
@@ -185,13 +195,23 @@ int main()
 									getchar();
 								} 
 							}while(!checkDestino(aviancaBrasil,d));
-							//
-							aerolinea[0].agregar(h,m,t,d);
-							break;
-						case 2: //Azul Lineas Aereas
 							do{
 								limpiar();
-								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
+								cin.clear();
+								cin.ignore();
+								cout<<"Escriba con exactitud (1) <- Deseo agregar este vuelo / (0) <- Deseo eliminar este vuelo: ";
+								cin>>eraseAdd;
+							}
+							while(cin.fail());
+							//
+							if(eraseAdd) aerolinea[0].agregar(h,m,t,d);
+							else		 aerolinea[0].eliminar(h,m,t,d);
+							break;
+						case 2: //Azul Lineas Aereas
+							// Chequeo del formato de fecha y hora 
+							do{
+								limpiar();
+								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm/24 Horas):"<<endl;
 								cout<<"hh (0-23): "; cin>>h;
 								cout<<"mm (0-59): "; cin>>m;
 								cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
@@ -206,7 +226,7 @@ int main()
 								} 
 							}
 							while(!checkHora(h,m,t));
-							//
+							// Chequeo del destino
 							limpiar();
 							do{
 								limpiar();
@@ -218,13 +238,23 @@ int main()
 									getchar();
 								} 
 							}while(!checkDestino(azulLineasAereas,d));
-							//
-							aerolinea[1].agregar(h,m,t,d);
-							break;
-						case 3: //GOL Lineas Aereas
 							do{
 								limpiar();
-								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
+								cin.clear();
+								cin.ignore();
+								cout<<"Escriba con exactitud (1) <- Deseo agregar este vuelo / (0) <- Deseo eliminar este vuelo: ";
+								cin>>eraseAdd;
+							}
+							while(cin.fail());
+							//
+							if(eraseAdd) aerolinea[1].agregar(h,m,t,d);
+							else		 aerolinea[1].eliminar(h,m,t,d);
+							break;
+						case 3: //GOL Lineas Aereas
+							// Chequeo del formato de fecha y hora 
+							do{
+								limpiar();
+								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm/24 Horas):"<<endl;
 								cout<<"hh (0-23): "; cin>>h;
 								cout<<"mm (0-59): "; cin>>m;
 								cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
@@ -239,7 +269,7 @@ int main()
 								} 
 							}
 							while(!checkHora(h,m,t));
-							//
+							// Chequeo del destino
 							limpiar();
 							do{
 								limpiar();
@@ -251,16 +281,27 @@ int main()
 									getchar();
 								} 
 							}while(!checkDestino(golLineasAereas,d));
-							//
-							aerolinea[2].agregar(h,m,t,d);
-							break;
-						case 4: //Passared Lineas Aereas
 							do{
 								limpiar();
-								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
+								cin.clear();
+								cin.ignore();
+								cout<<"Escriba con exactitud (1) <- Deseo agregar este vuelo / (0) <- Deseo eliminar este vuelo: ";
+								cin>>eraseAdd;
+							}
+							while(cin.fail());
+							//
+							if(eraseAdd) aerolinea[2].agregar(h,m,t,d);
+							else		 aerolinea[2].eliminar(h,m,t,d);
+							break;
+						case 4: //Passared Lineas Aereas
+							// Chequeo del formato de fecha y hora 
+							do{
+								limpiar();
+								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm/24 Horas):"<<endl;
 								cout<<"hh (0-23): "; cin>>h;
 								cout<<"mm (0-59): "; cin>>m;
 								cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
+								cout<<"Introduzca la fecha del vuelo (D/M/A)"<<endl;
 								if(!checkHora(h,m,t)){
 									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
 									getchar();
@@ -272,7 +313,7 @@ int main()
 								} 
 							}
 							while(!checkHora(h,m,t));
-							//
+							// Chequeo del destino
 							limpiar();
 							do{
 								limpiar();
@@ -284,16 +325,27 @@ int main()
 									getchar();
 								} 
 							}while(!checkDestino(passaredLineasAereas,d));
-							//
-							aerolinea[3].agregar(h,m,t,d);
-							break; 
-						case 5: //LATAM Brasil
 							do{
 								limpiar();
-								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm):"<<endl;
+								cin.clear();
+								cin.ignore();
+								cout<<"Escriba con exactitud (1) <- Deseo agregar este vuelo / (0) <- Deseo eliminar este vuelo: ";
+								cin>>eraseAdd;
+							}
+							while(cin.fail());
+							//
+							if(eraseAdd) aerolinea[3].agregar(h,m,t,d);
+							else		 aerolinea[3].eliminar(h,m,t,d);
+							break; 
+						case 5: //LATAM Brasil
+							// Chequeo del formato de fecha y hora 
+							do{
+								limpiar();
+								cout<<"Intrododuzca la hora en el formato solicitado (hh-mm/24 Horas):"<<endl;
 								cout<<"hh (0-23): "; cin>>h;
 								cout<<"mm (0-59): "; cin>>m;
 								cout<<"Introduzca el tipo de vuelo (1 para descarga/0 para carga): "; cin>>t;
+								cout<<"Introduzca la fecha del vuelo (D/M/A)"<<endl;
 								if(!checkHora(h,m,t)){
 									cout<<"Formato incorrecto, intente otra vez (Enter para continuar)"<<endl;
 									getchar();
@@ -305,7 +357,7 @@ int main()
 								} 
 							}
 							while(!checkHora(h,m,t));
-							//
+							// Chequeo del destino
 							limpiar();
 							do{
 								limpiar();
@@ -317,8 +369,17 @@ int main()
 									getchar();
 								} 
 							}while(!checkDestino(latamBrasil,d));
+							do{
+								limpiar();
+								cin.clear();
+								cin.ignore();
+								cout<<"Escriba con exactitud (1) <- Deseo agregar este vuelo / (0) <- Deseo eliminar este vuelo: ";
+								cin>>eraseAdd;
+							}
+							while(cin.fail());
 							//
-							aerolinea[4].agregar(h,m,t,d);
+							if(eraseAdd) aerolinea[4].agregar(h,m,t,d);
+							else		 aerolinea[4].eliminar(h,m,t,d);
 							break;
 						case 6: //Salir
 							salir = true;
@@ -327,7 +388,7 @@ int main()
 							limpiar();
 							cout<<"---Debe introducir una opcion valida (Numero del 1 al 6 | Enter para continuar)"<<endl;
 							getchar();
-							break; 
+							break;
 					}
 				}
 				salir = false;
@@ -456,76 +517,228 @@ int main()
 				salir = false;
 				break;
 				break;
-			case 3: //Visualización del aeropuerto
+			case 3: //Visualización del aeropuerto en tiempo real
 				//Vuelos programados
-				while(salir == false){
-					limpiar();
-					time_t now = time(0);
-					tm *contenedor = localtime(&now);
-					strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
-					cout<<setw(40)<<"HORA ACTUAL: "<<buffer<<endl<<endl;
-					cout<<setw(40)<<"*** VUELOS PROGRAMADOS ***"<<endl;
-					for(i=0; i<5; i++){
-						if(!aerolinea[i].vuelos.empty()){
-							j = 0;
-							while(j < aerolinea[i].vuelos.size()){
-								if(contenedor->tm_hour >= aerolinea[i].vuelos[j].hora && contenedor->tm_min >= aerolinea[i].vuelos[j].min){
-									aerolinea[i].vuelos[j].avion = aviones[(rand() % aviones.size())];
-									aerolinea[i].vuelos[j].avion.tiempoCarga += rand()%3;
-									aerolinea[i].vuelos[j].avion.tiempoDescarga += rand()%3;
-									aerolinea[i].vuelos[j].avion.tiempoPista += rand()%3;
-									vuelosEspera.push_back(aerolinea[i].vuelos[j]);
-									aerolinea[i].vuelos.erase(aerolinea[i].vuelos.begin()+j);
-									j--;
+				{
+					time_t tInit = time(0);
+					tm *init = localtime(&tInit);
+					int initHora = init->tm_hour,
+						initMin  = init->tm_min;
+					tm *contenedor = localtime(&tInit);			
+					while(salir == false){
+						limpiar();
+						time_t tNow = time(0);
+						tm *now = localtime(&tNow);
+						showHoraFecha(tNow);
+
+						if(!vuelosCarga.empty()){
+							for(i=0; i<vuelosCarga.size(); i++){
+								tNow = time(0);
+								now = localtime(&tNow);
+								if(now->tm_hour >= vuelosCarga[i].hora){
+									if((now->tm_hour == vuelosCarga[i].hora && now->tm_min >= vuelosCarga[i].min) || now->tm_hour > vuelosCarga[i].hora){
+										aerolinea[vuelosCarga[i].i].vuelos[vuelosCarga[i].j].estado = 3;
+										for(j=0; j<vuelosCarga.size()-1; j++){
+											vuelosCarga[i] = vuelosCarga[i+1];
+										}
+										vuelosCarga.erase(vuelosCarga.begin()+vuelosCarga.size());
+									}
 								}
-								j++;
 							}
-							update = false;
 						}
-						if(!aerolinea[i].vuelos.empty()){
-							cout<<"----"<<aerolinea[i].nombre<<"----"<<endl;
-							cout<<setw(20)<<"_Destino"<<setw(10)<<"_Hora"<<setw(10)<<"_Tipo"<<endl;
-							for(j=0; j<aerolinea[i].vuelos.size(); j++){
-								contenedor->tm_hour = aerolinea[i].vuelos[j].hora;
-								contenedor->tm_min  = aerolinea[i].vuelos[j].min;
-								cout<<"|"<<setw(19)<<aerolinea[i].vuelos[j].destino.c_str();
-								strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
-								cout<<setw(10)<<buffer;
-								cout<<setw(10)<<aerolinea[i].vuelos[j].tipo<<endl;
-							
+
+						if(!vuelosDescarga.empty()){
+							for(i=0; i<vuelosDescarga.size(); i++){
+								tNow = time(0);
+								now = localtime(&tNow);
+								if(now->tm_hour >= vuelosDescarga[i].hora){
+									if((now->tm_hour == vuelosDescarga[i].hora && now->tm_min >= vuelosDescarga[i].min) || now->tm_hour > vuelosDescarga[i].hora){
+										aerolinea[vuelosDescarga[i].i].vuelos[vuelosDescarga[i].j].estado = 3;
+										for(j=0; j<vuelosDescarga.size()-1; j++){
+											vuelosDescarga[i] = vuelosDescarga[i+1];
+										}
+										vuelosDescarga.erase(vuelosDescarga.begin()+vuelosDescarga.size());
+									}
+								}
 							}
-							cout<<endl;
+						}
+
+						cout<<setw(50)<<"*** VUELOS PROGRAMADOS ***"<<endl;
+						for(i=0; i<5; i++){ //Ciclo por cada aerolínea
+							if(!aerolinea[i].vuelos.empty()){
+								//Se chequean los vuelos programados
+								for(j=0; j<aerolinea[i].vuelos.size(); j++){
+									tNow = time(0);
+									now = localtime(&tNow);
+									if(aerolinea[i].vuelos[j].hora >= initHora && (aerolinea[i].vuelos[j].estado == 0)){
+										if( (aerolinea[i].vuelos[j].hora == initHora && aerolinea[i].vuelos[j].min >= initMin) || (aerolinea[i].vuelos[j].hora > initHora)){
+											if(now->tm_hour >= aerolinea[i].vuelos[j].hora){
+												if(((now->tm_hour == aerolinea[i].vuelos[j].hora) && (now->tm_min >= aerolinea[i].vuelos[j].min)) || (now->tm_hour > aerolinea[i].vuelos[j].hora)){
+													aerolinea[i].vuelos[j].avion = aviones[rand() % aviones.size()];
+													aerolinea[i].vuelos[j].avion.tiempoCarga += rand()%3;
+													aerolinea[i].vuelos[j].avion.tiempoDescarga += rand()%3;
+													aerolinea[i].vuelos[j].avion.tiempoPista += rand()%3;
+													aerolinea[i].vuelos[j].estado = 1;
+												}
+											}		
+										}
+									}				
+								}
+								//Se muestran los vuelos que están programados
+								cout<<"----"<<aerolinea[i].nombre<<"----"<<endl;
+								cout<<setw(20)<<"_Destino"<<setw(12)<<"_Hora"<<setw(12)<<"_Tipo"<<setw(13)<<"_Estado"<<setw(15)<<"_Avion"<<setw(10)<<"_Fin"<<endl;
+								for(j=0; j<aerolinea[i].vuelos.size(); j++){
+									string sEstado;
+									contenedor->tm_hour = aerolinea[i].vuelos[j].hora;
+									contenedor->tm_min  = aerolinea[i].vuelos[j].min;
+									cout<<"|"<<setw(19)<<aerolinea[i].vuelos[j].destino.c_str();
+									strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
+									cout<<setw(12)<<buffer;
+									if(aerolinea[i].vuelos[j].tipo){
+										cout<<setw(12)<<"DESCARGA";
+									}
+									else{
+										cout<<setw(12)<<"CARGA";
+									}
+									switch(aerolinea[i].vuelos[j].estado){
+										case 0:
+											sEstado = "PROGRAMADO";
+											break;
+										case 1:
+											sEstado = "EN ESPERA";
+											break;
+										case 2:
+											sEstado = "EN PROGRESO";
+											break;
+										case 3:
+											sEstado = "ATENDIDO";
+											break;
+										default:
+											sEstado = "ERROR";
+											break;
+									}
+									cout<<setw(13)<<sEstado.c_str();
+									if(aerolinea[i].vuelos[j].estado != 0){
+										cout<<setw(15)<<aerolinea[i].vuelos[j].avion.nombre.c_str();
+									}
+									for(k=0; k<vuelosDescarga.size(); k++){
+										if(vuelosDescarga[k].i == i && vuelosDescarga[k].j == j){
+											contenedor->tm_hour = vuelosDescarga[k].hora;
+											contenedor->tm_min  = vuelosDescarga[k].min;
+											strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
+											cout<<setw(10)<<buffer;
+										}
+									}
+									for(k=0; k<vuelosCarga.size(); k++){
+										if(vuelosCarga[k].i == i && vuelosCarga[k].j == j){
+											contenedor->tm_hour = vuelosCarga[k].hora;
+											contenedor->tm_min  = vuelosCarga[k].min;
+											strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
+											cout<<setw(10)<<buffer;
+										}
+									}
+									cout<<endl;
+								}
+								cout<<endl;
+							}
+						}
+						cout<<endl;
+						cout<<"- (1) para actualizar"<<endl;
+						cout<<"- (2) para atender 1 vuelo en espera de carga"<<endl;
+						cout<<"- (3) para atender 1 vuelo en espera de descarga"<<endl;
+						cout<<"- (4) para salir"<<endl<<endl;
+						cout<<"* Introduzca el numero exacto: "; cin>>input;
+						if(cin.fail()){
+							cin.clear();
+							cin.ignore();
+							input = 2;
+						}
+						switch(input){
+							case 1:
+								break;
+							case 2: //Introducción de 1 vuelo en Espera a su respectivo terminal (Carga/Descarga)
+								{
+									Tiempo contenedor;
+									bool check = 0;
+									for(i=0; i<5; i++){
+										for(j=0; j<aerolinea[i].vuelos.size(); j++){
+											tNow = time(0);
+											now = localtime(&tNow);
+											int cMin, cHora;
+											if(aerolinea[i].vuelos[j].tipo == 0 && aerolinea[i].vuelos[j].estado == 1 && (vuelosCarga.size() < 5)){
+												contenedor.duracion = aerolinea[i].vuelos[j].avion.tiempoCarga + aerolinea[i].vuelos[j].avion.tiempoPista;
+												contenedor.i = i;
+												contenedor.j = j;
+												//Ajuste de la hora
+												if((now->tm_min + contenedor.duracion) > 59){
+													cout<<"Pass"<<endl;
+													cMin = contenedor.duracion + now->tm_min - 60; 
+													cHora = now->tm_hour + 1;
+												}
+												else{
+													cout<<"Pass"<<endl;
+													cMin = now->tm_min + contenedor.duracion;
+													cHora = now->tm_hour;
+												}
+												//
+												contenedor.hora = cHora;
+												contenedor.min	= cMin;
+												vuelosCarga.push_back(contenedor);
+												aerolinea[i].vuelos[j].estado = 2;
+												check = 1;
+												break;
+											}											
+										}
+										if(check == 1) break;
+									}
+								}								
+								break;
+							case 3:
+								{
+									Tiempo contenedor;
+									bool check = 0;
+									for(i=0; i<5; i++){
+										for(j=0; j<aerolinea[i].vuelos.size(); j++){
+											tNow = time(0);
+											now = localtime(&tNow);
+											int cMin, cHora;
+											if(aerolinea[i].vuelos[j].tipo == 1 && aerolinea[i].vuelos[j].estado == 1 && (vuelosDescarga.size() < 3)){
+												contenedor.duracion = aerolinea[i].vuelos[j].avion.tiempoDescarga + aerolinea[i].vuelos[j].avion.tiempoPista;
+												contenedor.i = i;
+												contenedor.j = j;
+												//Ajuste de la hora
+												if((now->tm_min + contenedor.duracion) > 59){
+													cMin = contenedor.duracion + now->tm_min - 60; 
+													cHora = now->tm_hour + 1;
+												}
+												else{
+													cMin = now->tm_min + contenedor.duracion;
+													cHora = now->tm_hour;
+												}
+												//
+												contenedor.hora = cHora;
+												contenedor.min	= cMin;
+												vuelosDescarga.push_back(contenedor);
+												aerolinea[i].vuelos[j].estado = 2;
+												check = 1;
+												break;
+											}										
+										}
+										if(check == 1) break;
+									}
+								}	
+								break;
+							case 4:
+								salir = true;
+								break;
+							default:
+								cout<<"---Debe introducir una opcion valida (Numero del 1 al 3 | Enter para continuar)"<<endl;
+								getchar();
+								break;
 						}
 					}
-					if(!vuelosEspera.empty()){
-						cout<<setw(40)<<"*** VUELOS EN ESPERA ***"<<endl;
-						cout<<setw(20)<<"_Destino"<<setw(20)<<"Nombr. Avion"<<endl;
-						for(i=0; i<vuelosEspera.size(); i++){
-							cout<<"|"<<setw(19)<<vuelosEspera[i].destino.c_str();
-							cout<<setw(20)<<vuelosEspera[i].avion.nombre.c_str();
-							cout<<endl;
-						}
-						
-					};
-					cout<<endl;
-					cout<<"(1) para salir / (2) para actualizar / (3) para atender 1 vuelo en espera"<<endl;
-					cout<<"Introduzca el numero exacto: "; cin>>input;
-					switch(input){
-						case 1:
-							salir = true;
-							break;
-						case 2:
-							update = true;
-							break;
-						case 3:
-							break;
-						default:
-							cout<<"---Debe introducir una opcion valida (Numero del 1 al 3 | Enter para continuar)"<<endl;
-							getchar();
-							break;
-					}
+					salir = false;
 				}
-				salir = false;
 				break;
 			case 4: //Interrumpir operacion
 				limpiar();
@@ -538,7 +751,7 @@ int main()
 				break;
 		}
 	}
-    
+	
 
     //Cerrando temporizador
     clock_t c_fin = clock();
@@ -558,7 +771,6 @@ int main()
 
 int menuGeneral(){      //Menú general de todo el programa
     int resp;
-    limpiar();
     cout<<"---"<<setw(30)<<"Menu principal"<<setw(21)<<"---"<<endl<<endl;
     cout<<"-1-"<<"  Gestionar vuelos en el aeropuerto"<<endl;
     cout<<"-2-"<<"  Gestionar aviones en funcionamiento"<<endl;
@@ -577,7 +789,6 @@ int menuGeneral(){      //Menú general de todo el programa
 
 int submenuVuelos(){    //Submenú para la gestión de vuelos
     int resp;
-    limpiar();
     cout<<"---"<<setw(30)<<"Seleccione aerolinea"<<setw(19)<<"---"<<endl<<endl;
     cout<<"-1-"<<"  Avianca Brasil"<<endl;
     cout<<"-2-"<<"  Azul Lineas Aereas"<<endl;
@@ -622,9 +833,10 @@ void limpiar(){
     //system("clear");
 }
 
-bool checkHora(int hour, int min, bool tipo){  //Chequear si la hora tiene valores correctos
-    int i;
-    if(hour > -1 && hour < 24 && min > 0 && min < 60 && (tipo == 0 || tipo == 1)) return true;
+bool checkHora(int hour, int min, bool tipo){  //Chequear si la hora y fecha tienen valores correctos
+	time_t update = time(0);
+   	tm *utm = localtime(&update);
+    if(hour > -1 && hour < 24 && min >= 0 && min < 60 && (tipo == 0 || tipo == 1)) return true;
     return false;
 }
 
@@ -649,6 +861,13 @@ void showDestinos(vector<string> destinos){
         }
     }
     cout<<endl;
+}
+
+void showHoraFecha(time_t time){
+	char buffer[80];
+	tm *contenedor = localtime(&time);
+	strftime(buffer,sizeof(buffer),"%d/%m/%y - %I:%M%p",contenedor);
+	cout<<setw(37)<<"FECHA/HORA ACTUAL: "<<buffer<<endl<<endl;
 }
 
 //Documentación de estudio
@@ -682,6 +901,24 @@ void showDestinos(vector<string> destinos){
 //
 //
 //--------------------Gestion de Tiempo-------------------------------
+//Condiciones de tiempo
+/*
+
+time_t now = time(0);
+
+tm *ltm = localtime(&now);
+
+cout << "Current min is " << ltm->tm_min<<endl;
+getchar();
+
+while(ltm->tm_min < 23){
+   time_t update = time(0);
+   tm *utm = localtime(&update);
+   cout << "Current min is " << ltm->tm_min<<endl;
+   getchar();
+}
+
+*/
 /*
 struct tm {
   int tm_sec;
