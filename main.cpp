@@ -1,11 +1,13 @@
-#include<iostream>  //Funciones básicas de la consola
+#include<iostream>  //Funciones b�sicas de la consola
 #include<fstream>   //Lectura y escritura de archivos
 #include<iomanip>   
-#include<string>    //Declaración de variables tipo String
-#include<vector>    //Contenedor de datos al leer información del archivo
+#include<string>    //Declaraci�n de variables tipo String
+#include<vector>    //Contenedor de datos al leer informaci�n del archivo
 #include<cstdio>
+#include<stdlib.h>
 #include<ctime>
 #include<algorithm>
+#include<sstream>
 
 using namespace std;
 
@@ -29,23 +31,21 @@ struct Avion{           //Registro para almacenar un avión
     int tiempoPista;    //Tiempo que pasa en la pista
 };
 
-struct Tiempo{
-	int duracion, i, j;
-	int hora,min;
-};
-
 struct Vuelo{           //Registro para almacenar un vuelo
     int hora, min;		//Hora en formatos hh:mm/hora = hh, min = mm
     bool tipo;          //0 si es salida, 1 si es entrada
     string destino;
     Avion avion;        //Avión que usará el vuelo
 	int estado;
+	int fHora, fMin; 	//Cálculo de la hora de finalización
+	int duracion;		//Duración del vuelo en empezar
 };
 
 class Aerolinea{        //Clase para gestionar aerolíneas
     public:
     string nombre;
     vector <Vuelo> vuelos;
+    int carga, descarga;
 
     //Agregar un vuelo con su hora, tipo y destino
     void agregar(int pHora, int pMin, bool pTipo, string pDestino){
@@ -83,24 +83,25 @@ class Aerolinea{        //Clase para gestionar aerolíneas
 int main()
 {
     //Declaraciones
-    int i, j, k, opc = 0; 
+    int i, j, k, cantidadVuelos = 0, opc = 0;
+	int carga = 0, descarga = 0; 
     bool salir = false;
-    fstream datos;
-	vector <Tiempo> vuelosDescarga;
-	vector <Tiempo> vuelosCarga;
-    vector <Avion> aviones;
+    vector <Avion> 	aviones;
+	Avion desconocido;
     Avion avContenedor;
 
     //Inicializando temporizador
     clock_t c_inicio = clock();
+	time_t tContenedor = time(0);
+	tm *contenedor = localtime(&tContenedor);
 
     //Inicializando aerolíneas
     Aerolinea aerolinea[5];
-        aerolinea[0].nombre = "Avianca Brasil";
-        aerolinea[1].nombre = "Azul Lineas Aereas";
-        aerolinea[2].nombre = "GOL Lineas Aereas";
-        aerolinea[3].nombre = "Passared o Lineas Aereas";
-        aerolinea[4].nombre = "LATAM Brasil";
+        aerolinea[0].nombre = "AviancaBrasil";
+        aerolinea[1].nombre = "AzulLineasAereas";
+        aerolinea[2].nombre = "GOLLineasAereas";
+        aerolinea[3].nombre = "PassaredOLineasAereas";
+        aerolinea[4].nombre = "LATAMBrasil";
 
     //Posibles rutas de cada aerolínea
     string sAviancaBrasil[] = {"Aracaju", "BeloHorizonte", "Belem", "Brasilia", "Chapeco", "Campo",
@@ -130,25 +131,126 @@ int main()
                     passaredLineasAereas(sPassaredLineasAereas, sPassaredLineasAereas+3),
     	            latamBrasil(sLatamBrasil,sLatamBrasil+29);
 
-    //
-    //Menú principal
 
-	avContenedor.nombre = "Boeing747";
-	avContenedor.tiempoCarga = 2;
-	avContenedor.tiempoDescarga = 1;
-	avContenedor.tiempoPista = 2;
-	aviones.push_back(avContenedor);
-	avContenedor.nombre = "AirbusA320";
-	avContenedor.tiempoCarga = 2;
-	avContenedor.tiempoDescarga = 1;
-	avContenedor.tiempoPista = 2;
-	aviones.push_back(avContenedor);
-	avContenedor.nombre = "TupolevTu-204";
-	avContenedor.tiempoCarga = 2;
-	avContenedor.tiempoDescarga = 1;
-	avContenedor.tiempoPista = 2;
-	aviones.push_back(avContenedor);
-    
+	desconocido.nombre = "Desconocido";
+	desconocido.tiempoCarga = 0;
+	desconocido.tiempoDescarga = 0;
+	desconocido.tiempoPista = 0;
+
+    //
+    //Men� principal
+
+	int cargar = 2;
+
+	//Carga de datos opcional de la ultima operaci�n
+	
+	//Carga de los datos de los vuelos
+	while(!(cargar == 1 || cargar == 0)){
+		limpiar();
+		cout<<"Desea cargar los vuelos de la ultima operacion? 1 - Si / 0 - No"<<endl;
+		cout<<"Escriba el numero exacto: ";
+		cin>>cargar;
+		if(cin.fail()){
+			cin.clear();
+			cin.ignore();
+			cargar = 2;
+		}
+	}
+
+	vector <string> vueloBackup;	
+	if(cargar == 1){
+		ifstream lVuelos;
+		string linea;
+		lVuelos.open("vuelos");
+		while(lVuelos>>linea){
+			vueloBackup.push_back(linea);
+		}
+		lVuelos.close();
+	}
+
+	int it = 0;
+	k=0;
+	if(!vueloBackup.empty()){
+		for(i=0; i<5; i++){
+			aerolinea[i].nombre = vueloBackup[k];
+			istringstream iss1(vueloBackup[k+1]);
+			iss1>>it;
+			k+=2;
+			for(j=0; j<it; j++){
+				Vuelo container;
+				container.destino = vueloBackup[k];
+				istringstream iss2(vueloBackup[k+1]);
+				iss2>>container.hora;
+				istringstream iss3(vueloBackup[k+2]);
+				iss3>>container.min;
+				istringstream iss4(vueloBackup[k+3]);
+				iss4>>container.tipo;
+				container.estado = 0;
+				aerolinea[i].vuelos.push_back(container);
+				k+=4;
+			}
+		}
+	}
+	else{
+		if(cargar == 1){
+			cout<<"No hay vuelos en el archivo"<<endl;
+			getchar(); getchar();
+		}	
+	}
+	
+	cargar = 2;
+	//Carga de los datos de los aviones
+	
+	while(!(cargar == 1 || cargar == 0)){
+		limpiar();
+		cout<<"Desea cargar los aviones de la ultima operacion? 1 - Si / 0 - No"<<endl;
+		cout<<"Escriba el numero exacto: ";
+		cin>>cargar;
+		if(cin.fail()){
+			cin.clear();
+			cin.ignore();
+			cargar = 2;
+		}
+	}
+
+	vector <string> avionBackup;	
+	if(cargar == 1){
+		ifstream lAviones;
+		string linea;
+		lAviones.open("aviones");
+		while(lAviones>>linea) avionBackup.push_back(linea);
+		lAviones.close();
+	}
+
+	j=0;
+	if(!avionBackup.empty()){
+		istringstream iss1(avionBackup[j]);
+		iss1>>it; j++;
+		for(i=0; i<it; i++){
+			Avion container;
+			container.nombre = avionBackup[j];
+			
+			istringstream iss2(avionBackup[j+1]);
+			iss2>>container.tiempoCarga;
+			
+			istringstream iss3(avionBackup[j+2]);
+			iss3>>container.tiempoDescarga;
+			
+			istringstream iss4(avionBackup[j+3]);
+			iss4>>container.tiempoPista;
+			
+			aviones.push_back(container);
+			j+=4;
+		}
+	}
+	else{
+		if(cargar == 1){
+			cout<<"No hay aviones en el archivo"<<endl;
+			getchar(); getchar();
+		}	
+	}
+	
+	//Ciclo principal
 	
 	while(salir == false){
 		limpiar();
@@ -156,6 +258,10 @@ int main()
 		opc = menuGeneral();
 		char buffer[80];
 		int input;
+		time_t tInit = time(0);
+		tm *init = localtime(&tInit);
+		int initHora = init->tm_hour,
+		initMin  = init->tm_min;
 		switch(opc){
 			case 1: //Gestión de vuelos por aerolínea
 				while(salir == false){			
@@ -401,7 +507,7 @@ int main()
 					string avion;
 					limpiar();
 					switch(opc){
-						case 1: //Introducir un avión
+						case 1: //Introducir un avi�n
 							do{
 								if(cin.fail())  cout<<"---Error, por favor introduzca el formato correcto"<<endl;
 								limpiar();
@@ -419,7 +525,7 @@ int main()
 							while(cin.fail());
 							aviones.push_back(avContenedor);
 							break;
-						case 2: //Eliminar un avión
+						case 2: //Eliminar un avi�n
 							if(!aviones.empty()){
 								limpiar();
 								cout<<"Introduzca el nombre del avion (Considere mayusculas): ";
@@ -444,7 +550,7 @@ int main()
 							}
 							getchar();
 							break;
-						case 3: //Modificar un avión
+						case 3: //Modificar un avi�n
 							if(!aviones.empty()){
 								limpiar();
 								cout<<"Introduzca el nombre del avion a modificar (Considere mayusculas): ";
@@ -502,7 +608,7 @@ int main()
 							else{
 								cout<<"No hay aviones activos en el sistema (Enter para continuar)"<<endl;
 							}
-							getchar();
+							getchar(); getchar();
 							break;
 						case 5:
 							salir = true;
@@ -516,65 +622,56 @@ int main()
 				}
 				salir = false;
 				break;
-				break;
 			case 3: //Visualización del aeropuerto en tiempo real
 				//Vuelos programados
-				{
-					time_t tInit = time(0);
-					tm *init = localtime(&tInit);
-					int initHora = init->tm_hour,
-						initMin  = init->tm_min;
-					tm *contenedor = localtime(&tInit);			
+				{			
 					while(salir == false){
 						limpiar();
 						time_t tNow = time(0);
 						tm *now = localtime(&tNow);
 						showHoraFecha(tNow);
 
-						if(!vuelosCarga.empty()){
-							for(i=0; i<vuelosCarga.size(); i++){
-								tNow = time(0);
-								now = localtime(&tNow);
-								if(now->tm_hour >= vuelosCarga[i].hora){
-									if((now->tm_hour == vuelosCarga[i].hora && now->tm_min >= vuelosCarga[i].min) || now->tm_hour > vuelosCarga[i].hora){
-										aerolinea[vuelosCarga[i].i].vuelos[vuelosCarga[i].j].estado = 3;
-										for(j=0; j<vuelosCarga.size()-1; j++){
-											vuelosCarga[i] = vuelosCarga[i+1];
-										}
-										vuelosCarga.erase(vuelosCarga.begin()+vuelosCarga.size());
-									}
-								}
-							}
-						}
-
-						if(!vuelosDescarga.empty()){
-							for(i=0; i<vuelosDescarga.size(); i++){
-								tNow = time(0);
-								now = localtime(&tNow);
-								if(now->tm_hour >= vuelosDescarga[i].hora){
-									if((now->tm_hour == vuelosDescarga[i].hora && now->tm_min >= vuelosDescarga[i].min) || now->tm_hour > vuelosDescarga[i].hora){
-										aerolinea[vuelosDescarga[i].i].vuelos[vuelosDescarga[i].j].estado = 3;
-										for(j=0; j<vuelosDescarga.size()-1; j++){
-											vuelosDescarga[i] = vuelosDescarga[i+1];
-										}
-										vuelosDescarga.erase(vuelosDescarga.begin()+vuelosDescarga.size());
-									}
-								}
-							}
-						}
-
 						cout<<setw(50)<<"*** VUELOS PROGRAMADOS ***"<<endl;
-						for(i=0; i<5; i++){ //Ciclo por cada aerolínea
+						for(i=0; i<5; i++){ //Ciclo por cada aerol�nea
 							if(!aerolinea[i].vuelos.empty()){
 								//Se chequean los vuelos programados
 								for(j=0; j<aerolinea[i].vuelos.size(); j++){
 									tNow = time(0);
 									now = localtime(&tNow);
+									
+									if(now->tm_mday > init->tm_mday){
+										int l,y;
+										for(l=0; l<5; l++){
+											for(y=0; y<aerolinea[l].vuelos.size(); y++){
+												aerolinea[j].vuelos[y].estado = 0;
+												init = now;
+											}
+										}
+									}
+
+									if(now->tm_hour >= aerolinea[i].vuelos[j].fHora && aerolinea[i].vuelos[j].estado == 2){
+										if((now->tm_hour == aerolinea[i].vuelos[j].fHora && now->tm_min >= aerolinea[i].vuelos[j].fMin) || (now->tm_hour > aerolinea[i].vuelos[j].fHora)){
+											aerolinea[i].vuelos[j].estado = 3;
+											cantidadVuelos++;
+											if(aerolinea[i].vuelos[j].tipo == 1){
+												descarga--;
+											}
+											else{
+												carga--;
+											}
+										}
+									}
+
 									if(aerolinea[i].vuelos[j].hora >= initHora && (aerolinea[i].vuelos[j].estado == 0)){
 										if( (aerolinea[i].vuelos[j].hora == initHora && aerolinea[i].vuelos[j].min >= initMin) || (aerolinea[i].vuelos[j].hora > initHora)){
 											if(now->tm_hour >= aerolinea[i].vuelos[j].hora){
 												if(((now->tm_hour == aerolinea[i].vuelos[j].hora) && (now->tm_min >= aerolinea[i].vuelos[j].min)) || (now->tm_hour > aerolinea[i].vuelos[j].hora)){
-													aerolinea[i].vuelos[j].avion = aviones[rand() % aviones.size()];
+													if(aviones.size() == 0){
+														aerolinea[i].vuelos[j].avion = desconocido;
+													}
+													else{
+														aerolinea[i].vuelos[j].avion = aviones[rand()%aviones.size()];
+													}
 													aerolinea[i].vuelos[j].avion.tiempoCarga += rand()%3;
 													aerolinea[i].vuelos[j].avion.tiempoDescarga += rand()%3;
 													aerolinea[i].vuelos[j].avion.tiempoPista += rand()%3;
@@ -584,14 +681,14 @@ int main()
 										}
 									}				
 								}
-								//Se muestran los vuelos que están programados
+								//Se muestran los vuelos que est�n programados
 								cout<<"----"<<aerolinea[i].nombre<<"----"<<endl;
 								cout<<setw(20)<<"_Destino"<<setw(12)<<"_Hora"<<setw(12)<<"_Tipo"<<setw(13)<<"_Estado"<<setw(15)<<"_Avion"<<setw(10)<<"_Fin"<<endl;
 								for(j=0; j<aerolinea[i].vuelos.size(); j++){
 									string sEstado;
+									cout<<"|"<<setw(19)<<aerolinea[i].vuelos[j].destino.c_str();									
 									contenedor->tm_hour = aerolinea[i].vuelos[j].hora;
 									contenedor->tm_min  = aerolinea[i].vuelos[j].min;
-									cout<<"|"<<setw(19)<<aerolinea[i].vuelos[j].destino.c_str();
 									strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
 									cout<<setw(12)<<buffer;
 									if(aerolinea[i].vuelos[j].tipo){
@@ -621,27 +718,19 @@ int main()
 									if(aerolinea[i].vuelos[j].estado != 0){
 										cout<<setw(15)<<aerolinea[i].vuelos[j].avion.nombre.c_str();
 									}
-									for(k=0; k<vuelosDescarga.size(); k++){
-										if(vuelosDescarga[k].i == i && vuelosDescarga[k].j == j){
-											contenedor->tm_hour = vuelosDescarga[k].hora;
-											contenedor->tm_min  = vuelosDescarga[k].min;
-											strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
-											cout<<setw(10)<<buffer;
-										}
-									}
-									for(k=0; k<vuelosCarga.size(); k++){
-										if(vuelosCarga[k].i == i && vuelosCarga[k].j == j){
-											contenedor->tm_hour = vuelosCarga[k].hora;
-											contenedor->tm_min  = vuelosCarga[k].min;
-											strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
-											cout<<setw(10)<<buffer;
-										}
+									if(aerolinea[i].vuelos[j].estado == 2 || aerolinea[i].vuelos[j].estado == 3){
+										contenedor->tm_hour = aerolinea[i].vuelos[j].fHora;
+										contenedor->tm_min  = aerolinea[i].vuelos[j].fMin;
+										strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
+										cout<<setw(10)<<buffer;	
 									}
 									cout<<endl;
 								}
 								cout<<endl;
 							}
 						}
+						cout<<endl;
+						cout<<"= Cantidad de vuelos atendidos: "<<cantidadVuelos<<endl;
 						cout<<endl;
 						cout<<"- (1) para actualizar"<<endl;
 						cout<<"- (2) para atender 1 vuelo en espera de carga"<<endl;
@@ -656,36 +745,33 @@ int main()
 						switch(input){
 							case 1:
 								break;
-							case 2: //Introducción de 1 vuelo en Espera a su respectivo terminal (Carga/Descarga)
+							case 2: //Introduccion de 1 vuelo en espera de carga a su respectivo terminal
 								{
-									Tiempo contenedor;
 									bool check = 0;
 									for(i=0; i<5; i++){
 										for(j=0; j<aerolinea[i].vuelos.size(); j++){
 											tNow = time(0);
 											now = localtime(&tNow);
 											int cMin, cHora;
-											if(aerolinea[i].vuelos[j].tipo == 0 && aerolinea[i].vuelos[j].estado == 1 && (vuelosCarga.size() < 5)){
-												contenedor.duracion = aerolinea[i].vuelos[j].avion.tiempoCarga + aerolinea[i].vuelos[j].avion.tiempoPista;
-												contenedor.i = i;
-												contenedor.j = j;
+											if(aerolinea[i].vuelos[j].tipo == 0 && aerolinea[i].vuelos[j].estado == 1 && (carga < 5)){
+												aerolinea[i].vuelos[j].duracion = aerolinea[i].vuelos[j].avion.tiempoCarga + aerolinea[i].vuelos[j].avion.tiempoPista;
 												//Ajuste de la hora
-												if((now->tm_min + contenedor.duracion) > 59){
+												if((now->tm_min + aerolinea[i].vuelos[j].duracion) > 59){
 													cout<<"Pass"<<endl;
-													cMin = contenedor.duracion + now->tm_min - 60; 
+													cMin = aerolinea[i].vuelos[j].duracion + now->tm_min - 60; 
 													cHora = now->tm_hour + 1;
 												}
 												else{
 													cout<<"Pass"<<endl;
-													cMin = now->tm_min + contenedor.duracion;
+													cMin = now->tm_min + aerolinea[i].vuelos[j].duracion;
 													cHora = now->tm_hour;
 												}
 												//
-												contenedor.hora = cHora;
-												contenedor.min	= cMin;
-												vuelosCarga.push_back(contenedor);
+												aerolinea[i].vuelos[j].fHora = cHora;
+												aerolinea[i].vuelos[j].fMin	= cMin;
 												aerolinea[i].vuelos[j].estado = 2;
 												check = 1;
+												carga++;
 												break;
 											}											
 										}
@@ -693,34 +779,33 @@ int main()
 									}
 								}								
 								break;
-							case 3:
+							case 3: //Introduccion de 1 vuelo en espera de descarga a su respectivo terminal
 								{
-									Tiempo contenedor;
 									bool check = 0;
 									for(i=0; i<5; i++){
 										for(j=0; j<aerolinea[i].vuelos.size(); j++){
 											tNow = time(0);
 											now = localtime(&tNow);
 											int cMin, cHora;
-											if(aerolinea[i].vuelos[j].tipo == 1 && aerolinea[i].vuelos[j].estado == 1 && (vuelosDescarga.size() < 3)){
-												contenedor.duracion = aerolinea[i].vuelos[j].avion.tiempoDescarga + aerolinea[i].vuelos[j].avion.tiempoPista;
-												contenedor.i = i;
-												contenedor.j = j;
+											if(aerolinea[i].vuelos[j].tipo == 1 && aerolinea[i].vuelos[j].estado == 1 && (descarga < 3)){
+												aerolinea[i].vuelos[j].duracion = aerolinea[i].vuelos[j].avion.tiempoCarga + aerolinea[i].vuelos[j].avion.tiempoPista;
 												//Ajuste de la hora
-												if((now->tm_min + contenedor.duracion) > 59){
-													cMin = contenedor.duracion + now->tm_min - 60; 
+												if((now->tm_min + aerolinea[i].vuelos[j].duracion) > 59){
+													cout<<"Pass"<<endl;
+													cMin = aerolinea[i].vuelos[j].duracion + now->tm_min - 60; 
 													cHora = now->tm_hour + 1;
 												}
 												else{
-													cMin = now->tm_min + contenedor.duracion;
+													cout<<"Pass"<<endl;
+													cMin = now->tm_min + aerolinea[i].vuelos[j].duracion;
 													cHora = now->tm_hour;
 												}
 												//
-												contenedor.hora = cHora;
-												contenedor.min	= cMin;
-												vuelosDescarga.push_back(contenedor);
+												aerolinea[i].vuelos[j].fHora = cHora;
+												aerolinea[i].vuelos[j].fMin	= cMin;
 												aerolinea[i].vuelos[j].estado = 2;
 												check = 1;
+												descarga++;
 												break;
 											}										
 										}
@@ -755,21 +840,180 @@ int main()
 
     //Cerrando temporizador
     clock_t c_fin = clock();
-    cout<<"El programa funciono por: "<<(c_fin - c_inicio)/CLOCKS_PER_SEC<<" segundos"<<endl;
-    getchar();  
+	double tiempoOp, tiempoSeg;
 
-    //Recaudando información del archivo
-    datos.open("datos", ios::out | ios::in);
-    datos.close();
+	
+	tiempoSeg = (c_fin - c_inicio)/CLOCKS_PER_SEC;
+	string formato;
+
+	if(tiempoSeg > 3600){
+		tiempoOp = tiempoSeg/3600;
+		formato = " horas";
+	}
+	else if(tiempoSeg > 60){
+		tiempoOp = tiempoSeg/60;
+		formato = " minutos";
+	}
+	else{
+		tiempoOp = tiempoSeg;
+		formato = " segundos";
+	}
+
+	cargar = 2;
+	
+	//Pregunta para saber si se desea poder reiniciar el sistema
+	while(!(cargar == 1 || cargar == 0)){
+		limpiar();
+		cout<<"Desea que el sistema se pueda reanudar en el proximo inicio? 1 - Si / 0 - No"<<endl;
+		cout<<"Escriba el numero exacto: ";
+		cin>>cargar;
+		if(cin.fail()){
+			cin.clear();
+			cin.ignore();
+			cargar = 2;
+		}
+	}
+
+	if(cargar == 1){
+		//Generando archivo de recuperacion de los vuelos
+		ofstream fVuelos;
+
+		fVuelos.open("vuelos", ofstream::out | ofstream::trunc);
+		for(i=0; i<5; i++){
+			fVuelos<<aerolinea[i].nombre<<endl;
+			fVuelos<<aerolinea[i].vuelos.size()<<endl;
+			for(j=0; j<aerolinea[i].vuelos.size(); j++){
+				fVuelos<<aerolinea[i].vuelos[j].destino<<endl;
+				fVuelos<<aerolinea[i].vuelos[j].hora<<endl;
+				fVuelos<<aerolinea[i].vuelos[j].min<<endl;
+				fVuelos<<aerolinea[i].vuelos[j].tipo<<endl;
+			}
+		}
+		fVuelos.close();
+	}
+	else{
+		ofstream fVuelos;
+		fVuelos.open("vuelos", ofstream::out | ofstream::trunc);
+		fVuelos.close();
+	}
+	
+	//Generando archivo de recuperacion de los aviones
+	ofstream fAviones;
+
+	fAviones.open("aviones", ofstream::out | ofstream::trunc);
+
+	fAviones<<aviones.size()<<endl;
+	for(i=0; i<aviones.size(); i++){
+		fAviones<<aviones[i].nombre<<endl;
+		fAviones<<aviones[i].tiempoCarga<<endl;
+		fAviones<<aviones[i].tiempoDescarga<<endl;
+		fAviones<<aviones[i].tiempoPista<<endl;
+	}
+	fAviones.close();
+	
+
+    //Generando reporte del archivo
+	ofstream reporte;
+	char buffer[100];
+	bool check1 = 0, check2 = 0;
+
+    reporte.open("reporte.txt", ofstream::out | ofstream::trunc);
+	reporte<<"--- REPORTE DE LA OPERACION DEL TERMINAL: ---"<<endl<<endl;
+	reporte<<"Cantidad de vuelos atendidos: "<<cantidadVuelos<<endl;
+	reporte<<"Tiempo de operacion: "<<tiempoOp<<formato.c_str();
+	reporte<<endl<<endl;
+
+	for(i=0; i<5; i++){
+		for(j=0; j<aerolinea[i].vuelos.size(); j++){
+			if(aerolinea[i].vuelos[j].estado == 3){
+				check1 = 1;
+			}
+		}
+	}
+
+	reporte<<"--- VUELOS ATENDIDOS ---"<<endl;
+	if(check1 == 1){
+		for(i=0; i<5; i++){
+			check2 = 0;
+			for(j=0; j<aerolinea[i].vuelos.size(); j++){
+				if(aerolinea[i].vuelos[j].estado == 3) check2 = 1;
+			}
+			if(check2){
+				reporte<<":::"<<aerolinea[i].nombre<<":::"<<endl;
+				reporte<<setw(20)<<"_Destino"<<setw(12)<<"_Hora"<<setw(12)<<"_Tipo"<<setw(15)<<"_Avion"<<endl;
+				for(j=0; j<aerolinea[i].vuelos.size(); j++){
+					if(aerolinea[i].vuelos[j].estado == 3){
+						reporte<<setw(20)<<aerolinea[i].vuelos[j].destino.c_str();
+						contenedor->tm_hour = aerolinea[i].vuelos[j].hora;
+						contenedor->tm_min  = aerolinea[i].vuelos[j].min;
+						strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
+						reporte<<setw(12)<<buffer;
+						if(aerolinea[i].vuelos[j].tipo) reporte<<setw(12)<<"DESCARGA";
+						else                        	reporte<<setw(12)<<"CARGA";
+						reporte<<setw(15)<<aerolinea[i].vuelos[j].avion.nombre.c_str()<<endl;
+					}
+				}
+			}
+		}
+	}
+	else{
+		reporte<<"No se atendieron vuelos durante la operación del terminal."<<endl;
+	}
+
+	reporte<<endl;
+
+	check1 = 0; check2 = 0;
+
+	for(i=0; i<5; i++){
+		for(j=0; j<aerolinea[i].vuelos.size(); j++){
+			if(aerolinea[i].vuelos[j].estado == 1){
+				check1 = 1;
+			}
+		}
+	}
+
+	reporte<<"--- VUELOS EN ESPERA ---"<<endl;
+	if(check1){
+		for(i=0; i<5; i++){
+			check2 = 0;
+			for(j=0; j<aerolinea[i].vuelos.size(); j++){
+				if(aerolinea[i].vuelos[j].estado == 1) check2 = 1;
+			}
+			if(check2){
+				reporte<<":::"<<aerolinea[i].nombre<<":::"<<endl;
+				reporte<<setw(20)<<"_Destino"<<setw(12)<<"_Hora"<<setw(12)<<"_Tipo"<<setw(15)<<"_Avion"<<endl;
+				for(j=0; j<aerolinea[i].vuelos.size(); j++){
+					if(aerolinea[i].vuelos[j].estado == 1){
+						reporte<<setw(20)<<aerolinea[i].vuelos[j].destino.c_str();
+						contenedor->tm_hour = aerolinea[i].vuelos[j].hora;
+						contenedor->tm_min  = aerolinea[i].vuelos[j].min;
+						strftime(buffer,sizeof(buffer),"%I:%M%p",contenedor);
+						reporte<<setw(12)<<buffer;
+						if(aerolinea[i].vuelos[j].tipo) reporte<<setw(12)<<"DESCARGA";
+						else                        	reporte<<setw(12)<<"CARGA";
+						reporte<<setw(15)<<aerolinea[i].vuelos[j].avion.nombre.c_str()<<endl;
+					}
+				}
+			}
+		}
+	}
+	else{
+		reporte<<"No quedaron vuelos en espera durante la operacion del terminal."<<endl;
+	}
+	
+    reporte.close();
 
     //Fin del programa
     limpiar();
+
+	cout<<"Reporte generado - (Enter para cerrar el programa)"<<endl;
+	getchar(); 
     return 0;
 }
 
-//Menúes del sistema
+//Men�es del sistema
 
-int menuGeneral(){      //Menú general de todo el programa
+int menuGeneral(){      //Men� general de todo el programa
     int resp;
     cout<<"---"<<setw(30)<<"Menu principal"<<setw(21)<<"---"<<endl<<endl;
     cout<<"-1-"<<"  Gestionar vuelos en el aeropuerto"<<endl;
@@ -787,7 +1031,7 @@ int menuGeneral(){      //Menú general de todo el programa
     return resp;
 }
 
-int submenuVuelos(){    //Submenú para la gestión de vuelos
+int submenuVuelos(){    //Submen� para la gesti�n de vuelos
     int resp;
     cout<<"---"<<setw(30)<<"Seleccione aerolinea"<<setw(19)<<"---"<<endl<<endl;
     cout<<"-1-"<<"  Avianca Brasil"<<endl;
@@ -807,7 +1051,7 @@ int submenuVuelos(){    //Submenú para la gestión de vuelos
     return resp;
 }
 
-int submenuAviones(){   //Submenú para la gestión de aviones
+int submenuAviones(){   //Submen� para la gesti�n de aviones
     int resp;
     limpiar();
     cout<<"---"<<setw(33)<<"Seleccione una opcion"<<setw(15)<<"---"<<endl<<endl;
@@ -840,7 +1084,7 @@ bool checkHora(int hour, int min, bool tipo){  //Chequear si la hora y fecha tie
     return false;
 }
 
-bool checkDestino(vector<string> pDestinos, string destino){
+bool checkDestino(vector<string> pDestinos, string destino){ //Chequear si el destino es correcto
     int i;
     for(i = 0; i < pDestinos.size(); i++){
             if(pDestinos[i] == destino) return true;
@@ -870,7 +1114,7 @@ void showHoraFecha(time_t time){
 	cout<<setw(37)<<"FECHA/HORA ACTUAL: "<<buffer<<endl<<endl;
 }
 
-//Documentación de estudio
+//Documentaci�n de estudio
 //
 //------------------------Archivos------------------------------------
 //--Declarando la variable de lectura/escritura
@@ -885,7 +1129,7 @@ void showHoraFecha(time_t time){
 //--Leyendo del archivo
 //contenedor>>texto;
 //
-//Leer múltiples líneas
+//Leer m�ltiples l�neas
 /*
   if (archivo.is_open()) {
       std::string linea;
